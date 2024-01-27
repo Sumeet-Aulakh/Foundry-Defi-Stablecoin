@@ -26,6 +26,7 @@ pragma solidity ^0.8.20;
 /**
  * @title DecentralizedStableCoin
  * @author Sumeet Singh Aulakh
+ *
  * Collateral: Exogenous (ETH & BTC)
  * Minting: Algorithmic
  * Relative Stability: Pegged to USD
