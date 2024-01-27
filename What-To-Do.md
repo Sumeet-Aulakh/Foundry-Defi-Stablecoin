@@ -1,4 +1,4 @@
-What to doin Stable Coin:
+# What to do in Stable Coin:
 
 1. Relative Stability: Anchored or Pegged -> $1.00
    1. Chainlink Price feed.
@@ -9,19 +9,19 @@ What to doin Stable Coin:
    1. wETH (wrapped ETH i.e. ERC20 Version of ETH)
    2. wBTC (wrapped BTC i.e. ERC20 Version of BTC)
 
-Two Contracts:
+# Two Contracts:
 
-1. Decentralized Stable Coin is ERC20Burnable (is ERC20) and Ownable.
+## Decentralized Stable Coin is ERC20Burnable (is ERC20) and Ownable.
 
-   Functions:
+   ### Functions:
 
    1. constructor() ERC20() Ownable()
    2. burn(uint256 amount)
    3. mint(address to, uint256 amount) : bool
 
-2. DSCEngine
+## DSCEngine
 
-   Functions:
+  ### Functions:
 
    1. depositCollateralAndMintDSC()
    2. depositCollateral()
