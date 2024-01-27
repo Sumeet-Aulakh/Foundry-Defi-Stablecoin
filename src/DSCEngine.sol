@@ -42,5 +42,26 @@ pragma solidity ^0.8.20;
  * @notice This contract is based on MakerDAO DSS System.
  */
 contract DSCEngine {
+    error DSCEngine__MustBeMoreThanZero();
 
+    modifier moreThanZero(uint256 amount) {
+        if (amount == 0) {
+            revert DSCEngine__MustBeMoreThanZero();
+        }
+        _;
+    }
+
+    modifier isAllowedToken(address token) {
+        // if (tokenNotAllowed) {}
+        _;
+    }
+
+    /*
+     * @param tokenCollateralAddress: The address of the token to be deposited as collateral.
+     * @param amountCollateral: The amount of collateral to deposit.
+     */
+    function depositCollateral(
+        address tokenCollateralAddress,
+        uint256 amountCollateral
+    ) external moreThanZero(amountCollateral) {}
 }
