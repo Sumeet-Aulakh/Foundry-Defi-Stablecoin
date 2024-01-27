@@ -37,6 +37,8 @@ pragma solidity ^0.8.20;
  *
  * It is similar to DAI if DAI had no governancen, no fees, and was backed by only wETH and wBTC.
  *
+ * Our DSC System should always be "overcollateralized". At no point, should the value of the collateral <= $ backed value by DSC.
+ *
  * @notice This contract is the core of the Decentralized Stablecoin system. It handles all the logic for minting and redeeming DSC, as well as depositing and withdrawing collateral.
  *
  * @notice This contract is based on MakerDAO DSS System.
@@ -56,12 +58,19 @@ contract DSCEngine {
         _;
     }
 
-    /*
-     * @param tokenCollateralAddress: The address of the token to be deposited as collateral.
-     * @param amountCollateral: The amount of collateral to deposit.
-     */
-    function depositCollateral(
-        address tokenCollateralAddress,
-        uint256 amountCollateral
-    ) external moreThanZero(amountCollateral) {}
+    function depositCollateralAndMintDSC() external {}
+
+    function depositCollateral() external {}
+
+    function redeemCollateralForDSC() external {}
+
+    function redeemCollateral() external {}
+
+    function mintDSC() external {}
+
+    function burnDSC() external {}
+
+    function liquidate() external {}
+
+    function getHealthFactor() external view {}
 }
