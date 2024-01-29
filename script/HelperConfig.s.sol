@@ -3,6 +3,8 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
+import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol"; // This is
 
 contract HelperConfig is Script {
     struct NetworkConfig {
@@ -12,6 +14,10 @@ contract HelperConfig is Script {
         address wbtc;
         uint256 deployerKey;
     }
+
+    uint8 public constant DECIMALS = 8;
+    int256 public constant ETH_USD_PRICE = 2000e8;
+    int256 public constant BTC_USD_PRICE = 1000e8;
 
     NetworkConfig public activeNetworkConfig;
 
@@ -27,7 +33,16 @@ contract HelperConfig is Script {
         });
     }
 
-    function getOrCreateAnvilEthConfig() public view returns (NetworkConfig memory) {
-        //TODO
+    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
+        if (activeNetworkConfig.wethUsdPriceFeed != address(0)) {
+            return activeNetworkConfig;
+        }
+
+        vm.startBroadcast();
+
+        MockV3Aggregator ethUsdPriceFeed = new MockV3Aggregator(DECIMALS, ETH_USD_PRICE);
+        ERC20Mock wethMock = new ERC20Mock();
+        // TODO
+        vm.stopBroadcast();
     }
 }
