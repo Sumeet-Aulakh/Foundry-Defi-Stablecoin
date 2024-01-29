@@ -42,7 +42,10 @@ Collateral is less than Threshold
 UNDERCOLLATERALIZED!!!!
 
 ```
-   Someone else <PersonB> sees this and pays $50 for that person <PersonA> and gets that person's <PersonA> all collateral.
+   Someone else <PersonB> sees this.
+   Pays $50 for that person <PersonA>
+   Gets that person's <PersonA> all collateral.
+
    $0 worth of ETH (Collateral)     <PersonA>
    $0 DSC                         <PersonA>
    $50                              <PersonA>
