@@ -84,6 +84,7 @@ contract DSCEngine is ReentrancyGuard {
     ////////////////////////
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
+    event CollateralRedeemed(address indexed user, address indexed token, uint256 amount);
 
     /////////////////////
     //    Modifiers    //
@@ -169,7 +170,23 @@ contract DSCEngine is ReentrancyGuard {
 
     function redeemCollateralForDSC() external {}
 
-    function redeemCollateral() external {}
+    /**
+     *
+     * @param tokenCollateralAddress is the address from where the collateral is to be redeemed
+     * @param amountCollateral is amount of the collateral to be redeemed
+     *
+     * @notice This function will redeem the collateral
+     * @notice If a user tries to withdraw more than they have, the Solidity compiler will throw an error, which is highly useful for preventing any unnecessary headaches.
+     */
+    function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral)
+        external
+        nonReentrant
+        moreThanZero(amountCollateral)
+    {
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
+
+        emit CollateralRedeemed(msg.sender, tokenCollateralAddress, amountCollateral);
+    }
 
     /**
      * @notice follows CEI (Checks, Effects, Interactions)
