@@ -37,6 +37,8 @@ contract DSCEngineTest is Test {
         uint256 ethAmount = 15e18;
         // 15e18 * 2000/ETH = 30000e18
         uint256 expectedUsd = 30000e18;
+        // uint256 expectedUsd = 3000e18;
+
         uint256 actualUsd = dsce.getUsdValue(weth, ethAmount);
         console.log("Expected USD: ", expectedUsd);
         console.log("Actual USD: ", actualUsd);
