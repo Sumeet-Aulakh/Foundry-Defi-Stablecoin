@@ -84,7 +84,7 @@ contract DSCEngine is ReentrancyGuard {
     ////////////////////////
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
-    event CollateralRedeemed(address indexed user, address indexed token, uint256 amount);
+    event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
 
     /////////////////////
     //    Modifiers    //
@@ -168,9 +168,17 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function redeemCollateralForDSC() external {}
+    function redeemCollateralForDSC(address tokenCollateralAddress, uint256 amountCollateral, uint256 amountDscToBurn)
+        external
+        moreThanZero(amountCollateral)
+    {
+        _burnDsc(amountDscToBurn, msg.sender, msg.sender);
+        _redeemCollateral(tokenCollateralAddress, amountCollateral, msg.sender, msg.sender);
+    }
 
     /**
+     *
+     * @notice follows CEI (Checks, Effects, Interactions)
      *
      * @param tokenCollateralAddress is the address from where the collateral is to be redeemed
      * @param amountCollateral is amount of the collateral to be redeemed
@@ -183,9 +191,19 @@ contract DSCEngine is ReentrancyGuard {
         nonReentrant
         moreThanZero(amountCollateral)
     {
-        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
+        // Checks - done in modifiers
 
+        // Effects
+        // For every state change we should emit an event
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
         emit CollateralRedeemed(msg.sender, tokenCollateralAddress, amountCollateral);
+
+        // Interactions
+        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, amountCollateral);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        _revertIfHealthFactorIsBroken(msg.sender); // Internal Function
     }
 
     /**
@@ -242,6 +260,26 @@ contract DSCEngine is ReentrancyGuard {
         if (healthFactor < MIN_HEALTH_FACTOR) {
             revert DSCEngine__BreaksHealthFactor(healthFactor);
         }
+    }
+
+    /**
+     *
+     * @notice This function will burn the DSC and transfer the collateral to the user
+     * @param amountToBurn amount of DSC to burn
+     * @param onBehalfOf address of the user who is burning the DSC
+     * @param dscFrom address from where the DSC is to be burned
+     */
+    function _burnDsc(uint256 amountToBurn, address onBehalfOf, address dscFrom) internal {
+        s_DSCMinted[onBehalfOf] -= amountToBurn;
+
+        bool success = i_dsc.transferFrom(dscFrom, address(this), amountToBurn);
+
+        // This condition is hypothetically unreachable
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amountToBurn);
+        // revertIfHealthFactorIsBroken(msg.sender); - we don't think this is ever going to hit.
     }
 
     /////////////////////////////////////////
