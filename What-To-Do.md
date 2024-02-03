@@ -47,7 +47,7 @@ UNDERCOLLATERALIZED!!!!
    Gets that person's <PersonA> all collateral.
 
    $0 worth of ETH (Collateral)     <PersonA>
-   $0 DSC                         <PersonA>
+   $0 DSC                           <PersonA>
    $50                              <PersonA>
    $74 worth of ETH (Collateral)    <PersonB>
    -$50 DSC                         <PersonB>
