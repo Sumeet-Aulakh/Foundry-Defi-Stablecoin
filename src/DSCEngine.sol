@@ -59,6 +59,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__TransferFailed();
     error DSCEngine__BreaksHealthFactor(uint256 healthFactor);
     error DSCEngine__MintFailed();
+    error DSCEngine__HealthFactorOk();
 
     ////////////////////////
     //   State Variables  //
@@ -69,6 +70,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant LIQUIDATION_THRESHOLD = 50; // 200% Overcollateralized
     uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant MIN_HEALTH_FACTOR = 1;
+    uint256 private constant LIQUIDATION_BONUS = 10;
 
     // Because we need to use Pricefeeds
     // mapping(address => bool) private s_tokenToAllowed;
@@ -172,8 +174,8 @@ contract DSCEngine is ReentrancyGuard {
         external
         moreThanZero(amountCollateral)
     {
-        _burnDsc(amountDscToBurn, msg.sender, msg.sender);
-        _redeemCollateral(tokenCollateralAddress, amountCollateral, msg.sender, msg.sender);
+        burnDSC(amountDscToBurn);
+        redeemCollateral(tokenCollateralAddress, amountCollateral);
     }
 
     /**
@@ -187,7 +189,7 @@ contract DSCEngine is ReentrancyGuard {
      * @notice If a user tries to withdraw more than they have, the Solidity compiler will throw an error, which is highly useful for preventing any unnecessary headaches.
      */
     function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral)
-        external
+        public
         nonReentrant
         moreThanZero(amountCollateral)
     {
@@ -221,9 +223,68 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function burnDSC() external {}
+    /**
+     * @notice follows CEI (Checks, Effects, Interactions)
+     * @param amount the amount of DSC to burn
+     */
+    function burnDSC(uint256 amount) public moreThanZero(amount) {
+        s_DSCMinted[msg.sender] -= amount;
 
-    function liquidate() external {}
+        bool success = i_dsc.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amount);
+        _revertIfHealthFactorIsBroken(msg.sender); // This may not be hit at all.
+    }
+
+    // $100 ETH backing $100 DSC
+    // Price of ETH drops
+    // $75 ETH backing $100 DSC, Undercollateralized according to the health factor
+    // Liquidator takes $75, and DSC $50 is burned.
+
+    // If someone is almost undercollateralized, we will pay you to liquidate them.
+
+    /**
+     *
+     * @param collateral The ERC20 address of the collateral token to liquidate from user.
+     * @param user The address of the user who has broken the health factor. Their _healthFactoor should be less than MIN_HEALTH_FACTOR.
+     * @param debtToCover The amount of DSC to burn to improve the user's health factir.
+     *
+     * @notice You can party liquidate a user.
+     * @notice You will get liquidation bonus for taking user's funds.
+     * @notice This function working assumes that the protocol will be roughly 200% overcollateralized in order for this to work.
+     * @notice A known bug would be if the protocol was only 100% collateralized, we wouldn't be able to liquidate anyone.
+     * For example, if the price of the collateral plummeted before anyone could be liquidated.
+     *
+     * Follows CEI (Checks, Effects, Interactions)
+     */
+    function liquidate(address collateral, address user, uint256 debtToCover) external {
+        // Need to check the health factor
+        uint256 startingUserHealthFactor = _healthFactor(user);
+
+        if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
+            revert DSCEngine__HealthFactorOk();
+        }
+
+        // We want to burn DSC "debt".
+        // And take their collateral.
+        // Bad User: $140 ETH with $100 DSC.
+        // debtToCover = $100
+        // $100 DSC == $??? ETH
+        // 0.05 ETH
+        uint256 tokenAmountFromDebtCoevered = getTokenAmountFromUsd(collateral, debtToCover);
+        // Give them a 10% bonus
+        // So we are giving liquidator $110 worth of WETH for $100 worth of DSC
+        // We should implement a feature to liquidate in event the protocol is insolvent.
+        // And sweep extra amount in treasury.
+
+        // 0.05 ETH * 0.1 = 0.005 ETH
+        uint256 bonusCollateral = (tokenAmountFromDebtCoevered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
+
+        uint256 totalCollateralToRedeem = tokenAmountFromDebtCoevered + bonusCollateral;
+        // TODO
+    }
 
     function getHealthFactor() external view {}
 
@@ -285,6 +346,17 @@ contract DSCEngine is ReentrancyGuard {
     /////////////////////////////////////////
     // Public and External View Functions  //
     /////////////////////////////////////////
+
+    function getTokenAmountFromUsd(address token, uint256 amountInWei) public view returns (uint256) {
+        // price of ETH (token)
+        // $/ETH ETH ?
+        // $2000/ETH.  $1000 = 0.5 ETH
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
+        (, int256 price,,,) = priceFeed.latestRoundData();
+
+        // (10e18 * 1e18) / (2000e8 * 1e10)
+        return (amountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
+    }
 
     function getAccountCollateralValueInUsd(address user) public view returns (uint256 totalCollateralValueInUsd) {
         // Loop through each collateral token, get amount they have deposited, and map it to price to get USD value
