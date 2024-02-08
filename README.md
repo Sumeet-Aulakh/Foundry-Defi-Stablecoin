@@ -140,3 +140,8 @@ slither :; slither . --config-file slither.config.json
 ```
 
 # Thank you!
+
+## Credits
+https://github.com/Cyfrin/foundry-defi-stablecoin-f23/
+https://github.com/Sumeet-Aulakh
+
