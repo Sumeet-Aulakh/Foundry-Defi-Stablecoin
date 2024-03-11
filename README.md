@@ -138,6 +138,3 @@ forge fmt
 ```
 slither :; slither . --config-file slither.config.json
 ```
-
-# Thank You
-
